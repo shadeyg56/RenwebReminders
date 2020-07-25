@@ -1,0 +1,6 @@
+private.py
+drivers/
+geckodriver.log
+env/
+__pycache__/
+pics/
