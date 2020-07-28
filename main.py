@@ -5,6 +5,7 @@ import private
 import driver as dv
 from passlib.hash import cisco_type7
 import os
+from PIL import Image, ImageFont, ImageDraw
 
 
 class Bot(Updater):
@@ -46,15 +47,37 @@ def fetch(update, context):
     user = bot.pool.execute("SELECT * FROM users WHERE id = %s", (update.effective_user.id,))
     user = bot.pool.fetchone()
     passw = cisco_type7.decode(user[2])
+    update.message.reply_text(f"Fetching homework for {day.title()}")
     driver = dv.CustomDriver()
     driver.login(user[1], passw)
     user = update.effective_user.id
     driver.fetch_pics(day, user)
     driver.quit()
+    images = []
+    heights = []
+    width = 0
     for file in os.listdir("pics"):
         if file.startswith(str(update.effective_user.id)):
-            update.message.reply_photo(open(f"pics/{file}", "rb"))
+            nfile = Image.open(f"pics/{file}")
+            images.append(nfile)
+            if len(heights) == 0:
+                width = nfile.width
+            heights.append(nfile.height)
+    new = Image.new("RGB", (width, sum(heights) + 35))
+    before = 35
+    for image in images:
+        new.paste(image, (0, before))
+        before += image.height
+    draw = ImageDraw.Draw(new)
+    font = ImageFont.truetype("fonts/Aaargh.ttf", 30)
+    w, h = draw.textsize(day.title())
+    draw.text(((new.width - w) / 2, 0), day.title(), (255, 255, 255), font=font, align="center")
+    new.save(f"pics/{update.effective_user.id}.png")
+    for file in os.listdir("pics"):
+        if file.startswith(str(update.effective_user.id)) and file != f"{str(update.effective_user.id)}.png":
             os.remove(f"pics/{file}")
+    update.message.reply_photo(open(f"pics/{update.effective_user.id}.png", "rb"))
+    os.remove(f"pics/{update.effective_user.id}.png")
 
 
 @bot.command("register", args=True)
