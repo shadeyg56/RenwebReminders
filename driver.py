@@ -1,10 +1,15 @@
 from selenium import webdriver
 import private
+import sys
 
 
 class CustomDriver(webdriver.Firefox):
     def __init__(self):
-        super().__init__(executable_path="drivers/geckodriver.exe")
+        if sys.platform == "linux":
+            driver = "drivers/geckodriver"
+        else:
+            driver = "drivers/geckodriver.exe"
+        super().__init__(executable_path=driver)
 
     def login(self, user, password):
         self.get(private.loginurl)  # url's are privated because they contain location info
@@ -17,10 +22,11 @@ class CustomDriver(webdriver.Firefox):
         self.get(private.homework_url)
         # searches for all children of a specific div
         elements = self.find_elements_by_css_selector('div.pwr_middle_content > *')
+        daytext = self.find_elements_by_css_selector('div.pwr_date_box > span')
         links = [x for x in elements]
-        day = 0
         days = {1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: []}
-        words = {"sunday": 1, "monday": 2, "tuesday": 3, "wednesday": 4, "thrusday": 5, "friday": 6, "saturday": 7}
+        words = {"sunday": 1, "monday": 2, "tuesday": 3, "wednesday": 4, "thursday": 5, "friday": 6, "saturday": 7}
+        day = words[daytext[0].text.lower()] - 1
         for element in links:
             # if it reaches this class, then it's the next day
             if element.get_attribute("class") == "pwr_date_hr":
